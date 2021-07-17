@@ -5,7 +5,11 @@ import tensorflow as tf
 import numpy as np
 
 def cmae(y_true, y_pred):
-    return tf.reduce_mean(tf.abs(y_true-y_pred)[:,15:-15,15:-15,:])
+    diff = tf.abs(y_true-y_pred)[:,15:-15,15:-15,:]
+    full_diff = tf.reduce_mean(diff)
+    clipped_diff = tf.reduce_mean(tf.clip_by_value(diff, clip_value_min=0.1, clip_value_max=100.0))
+    loss = full_diff + clipped_diff*10
+    return loss
 
 def create_model(N_scale=4, N_features=16):
     kernel_size = [2**N_scale-1, 2**N_scale-1] 
@@ -41,10 +45,11 @@ def create_base_model(N_scale=4):
     return model
 
 def train():
-    N_features = 4
+    N_features = 8
+    N_x = int(np.math.ceil(np.sqrt(N_features)))
     base_dir = os.path.dirname(__file__)
     # base_dir = '/content/ImageDecomposition/scripts'
-    model_fname = os.path.join(base_dir, 'sem_model_4.h5')
+    model_fname = os.path.join(base_dir, f'sem_model_{N_features}.h5')
     img_fname = os.path.join(base_dir,'..','data','sem_images','SRAM_22nm.jpg')
     dg = DataGenerator(img_fname)
 
@@ -87,7 +92,7 @@ def train():
 
 def analyse_model():
     base_dir =os.path.dirname(__file__)
-    model_fname = os.path.join(base_dir, 'sem_model_4.h5')
+    model_fname = os.path.join(base_dir, f'sem_model_{N_features}.h5')
     img_fname = os.path.join(base_dir,'..','data','sem_images','SRAM_22nm.jpg')
     dg = DataGenerator(img_fname)
 
@@ -95,7 +100,9 @@ def analyse_model():
       print(f'model not found:{model_fname}')
       return
 
-    N_features = 4
+    N_features = 8
+    N_x = int(np.math.ceil(np.sqrt(N_features)))
+    
     model = create_model(N_features=N_features)
     model.load_weights(model_fname)
     # model = tf.keras.models.load_model(model_fname)
@@ -109,12 +116,12 @@ def analyse_model():
     print(regions.shape)
     plt.figure(1)
     for i in range(N_features):
-      plt.subplot(2,2,i+1)
+      plt.subplot(N_x,N_x,i+1)
       plt.imshow(regions[0,:,:,i])
 
     plt.figure(2)
     for i in range(N_features):
-      plt.subplot(2,2,i+1)
+      plt.subplot(N_x,N_x,i+1)
       plt.imshow(features[0,:,:,i])
 
     img = dg.img4d[0,:,:,0]
@@ -127,6 +134,8 @@ def analyse_model():
     diff = out_img-gt_img
     mae = np.mean(np.abs(diff[15:-15,15:-15]))
     print(mae)
+    # histogram
+    diff_hist = np.histogram(np.abs(diff), bins=100)
 
     # base line
     base_model = create_base_model()
@@ -147,7 +156,8 @@ def analyse_model():
     plt.subplot(235, sharex=ax1, sharey=ax1),plt.imshow(base_out_img, vmin=0, vmax=1)
     plt.subplot(236, sharex=ax1, sharey=ax1),plt.imshow(base_diff, vmin=-0.2, vmax=0.2),plt.title(f'{base_mae:0.04f}')
 
-
+    plt.figure(4)
+    plt.plot(diff_hist[1][:-1], diff_hist[0]),plt.grid(True)
     plt.show()
 
 if __name__ == '__main__':

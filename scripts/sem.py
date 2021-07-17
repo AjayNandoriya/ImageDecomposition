@@ -16,7 +16,7 @@ def create_model(N_scale=4, N_features=16):
     features = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding='same', activation='relu')(sections)
     out = tf.keras.layers.Conv2D(1, kernel_size=(1,1), padding='same', activation=None, name='weight_sum')(features)
     model = tf.keras.models.Model(inputs=[inp],outputs=[out])
-    model.compile(loss=cmae, metrics='mse', loss_weights=10)
+    model.compile(loss=cmae, metrics='mse', loss_weights=50)
     return model
 
 class DataGenerator(tf.keras.utils.Sequence):
@@ -24,7 +24,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         img = cv2.imread(img_fname,0).astype(float)/255.0
         H,W = img.shape
         self.img4d = img.reshape((1,H,W,1))
-        self.img4d = np.tile(self.img4d, (4,1,1,1))
+        self.img4d = np.tile(self.img4d, (1,1,1,1))
     def __len__(self):
         return 10
     def __getitem__(self,i):
@@ -116,6 +116,37 @@ def analyse_model():
     for i in range(N_features):
       plt.subplot(2,2,i+1)
       plt.imshow(features[0,:,:,i])
+
+    img = dg.img4d[0,:,:,0]
+    gt_img = img
+    
+    # verify the model
+    out_img4d = model.predict(dg.img4d)
+    out_img = out_img4d[0,:,:,0]
+
+    diff = out_img-gt_img
+    mae = np.mean(np.abs(diff[15:-15,15:-15]))
+    print(mae)
+
+    # base line
+    base_model = create_base_model()
+    
+    base_out_img4d = base_model.predict(dg.img4d)
+    base_out_img = base_out_img4d[0,:,:,0]
+
+    base_diff = base_out_img-gt_img
+    base_mae = np.mean(np.abs(base_diff[15:-15,15:-15]))
+    print(base_mae)
+
+    plt.figure(3)
+    ax1=plt.subplot(231)
+    plt.imshow(img)
+    plt.subplot(232, sharex=ax1, sharey=ax1),plt.imshow(gt_img, vmin=0, vmax=1)
+    plt.subplot(233, sharex=ax1, sharey=ax1),plt.imshow(out_img, vmin=0, vmax=1)
+    plt.subplot(234, sharex=ax1, sharey=ax1),plt.imshow(diff, vmin=-0.2, vmax=0.2),plt.title(f'{mae:0.04f}')
+    plt.subplot(235, sharex=ax1, sharey=ax1),plt.imshow(base_out_img, vmin=0, vmax=1)
+    plt.subplot(236, sharex=ax1, sharey=ax1),plt.imshow(base_diff, vmin=-0.2, vmax=0.2),plt.title(f'{base_mae:0.04f}')
+
 
     plt.show()
 

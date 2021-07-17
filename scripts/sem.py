@@ -92,6 +92,7 @@ def train():
 
 def analyse_model():
     base_dir =os.path.dirname(__file__)
+    N_features = 8
     model_fname = os.path.join(base_dir, f'sem_model_{N_features}.h5')
     img_fname = os.path.join(base_dir,'..','data','sem_images','SRAM_22nm.jpg')
     dg = DataGenerator(img_fname)
@@ -100,7 +101,6 @@ def analyse_model():
       print(f'model not found:{model_fname}')
       return
 
-    N_features = 8
     N_x = int(np.math.ceil(np.sqrt(N_features)))
     
     model = create_model(N_features=N_features)

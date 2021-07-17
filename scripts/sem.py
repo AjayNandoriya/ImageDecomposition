@@ -9,9 +9,9 @@ def cmae(y_true, y_pred):
 
 def create_model(N_scale=4, N_features=16):
     kernel_size = [2**N_scale-1, 2**N_scale-1] 
-    strides = (2**(N_scale-1), 2**(N_scale-1))
+    strides = (2**(N_scale), 2**(N_scale))
     inp = tf.keras.layers.Input(shape=(None,None,1))
-    sections = tf.keras.layers.Conv2D(N_features, kernel_size=kernel_size, strides=strides, padding='same', activation='softmax')(inp)
+    sections = tf.keras.layers.Conv2D(N_features, kernel_size=kernel_size, strides=strides, padding='same', activation='softmax', name='regions')(inp)
     sections = tf.keras.layers.UpSampling2D(size=strides,interpolation='bilinear')(sections)
     features = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding='same', activation='relu')(sections)
     out = tf.keras.layers.Conv2D(1, kernel_size=(1,1), padding='same', activation=None, name='weight_sum')(features)
@@ -42,8 +42,10 @@ def create_base_model(N_scale=4):
 
 def train():
     N_features = 4
-    model_fname = os.path.join(os.path.dirname(__file__), 'sem_model_4.h5')
-    img_fname = os.path.join(os.path.dirname(__file__),'..','data','sem_images','SRAM_22nm.jpg')
+    base_dir = os.path.dirname(__file__)
+    # base_dir = '/content/ImageDecomposition/scripts'
+    model_fname = os.path.join(base_dir, 'sem_model_4.h5')
+    img_fname = os.path.join(base_dir,'..','data','sem_images','SRAM_22nm.jpg')
     dg = DataGenerator(img_fname)
 
     model = create_model(N_features=N_features)
@@ -52,7 +54,7 @@ def train():
     if os.path.isfile(model_fname):
         model.load_weights(model_fname)
 
-    model.fit(dg,epochs=3, verbose=1)
+    model.fit(dg,epochs=100, verbose=1)
     model.save(model_fname)
 
     img = dg.img4d[0,:,:,0]
@@ -83,17 +85,40 @@ def train():
     plt.subplot(236, sharex=ax1, sharey=ax1),plt.imshow(base_diff),plt.title(f'{base_mae:0.04f}')
 
 
+def analyse_model():
+    base_dir =os.path.dirname(__file__)
+    model_fname = os.path.join(base_dir, 'sem_model_4.h5')
+    img_fname = os.path.join(base_dir,'..','data','sem_images','SRAM_22nm.jpg')
+    dg = DataGenerator(img_fname)
+
+    if not os.path.isfile(model_fname):
+      print(f'model not found:{model_fname}')
+      return
+
+    N_features = 4
+    model = create_model(N_features=N_features)
+    model.load_weights(model_fname)
+    # model = tf.keras.models.load_model(model_fname)
+
     # analyse the model
     features = model.get_layer('weight_sum').input
-    debug_model = tf.keras.models.Model(inputs=[model.input], outputs=[features, model.output])
-    features, out_img = debug_model.predict(dg.img4d)
+    regions = model.get_layer('regions').output
+    debug_model = tf.keras.models.Model(inputs=[model.input], outputs=[features,regions, model.output])
+    features,regions, out_img = debug_model.predict(dg.img4d)
     print(features.shape)
+    print(regions.shape)
+    plt.figure(1)
+    for i in range(N_features):
+      plt.subplot(2,2,i+1)
+      plt.imshow(regions[0,:,:,i])
+
     plt.figure(2)
     for i in range(N_features):
-        plt.subplot(4,4,i+1)
-        plt.imshow(features[0,:,:,i])
+      plt.subplot(2,2,i+1)
+      plt.imshow(features[0,:,:,i])
 
     plt.show()
 
 if __name__ == '__main__':
-    train()
+    # train()
+    analyse_model()

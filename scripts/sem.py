@@ -50,6 +50,33 @@ def create_base_model(N_scale=4):
     model.compile(loss=cmae, metrics='mse')
     return model
 
+def create_polynomial_model(N_scale=4, N_power=4):
+    if N_power<=1:
+        N_features = 1
+    else:
+        N_features = N_power**2
+    kernel_size = [2**N_scale-1, 2**N_scale-1] 
+    strides = (2**(N_scale-1), 2**(N_scale-1))
+    inp = tf.keras.layers.Input(shape=(None,None,1))
+    sections = tf.keras.layers.Conv2D(N_features, kernel_size=kernel_size, strides=strides, padding='same', name='scale_features')(inp)
+    sections = tf.keras.layers.UpSampling2D(size=strides,interpolation='bilinear', name='features')(sections)
+    # features = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding='same', name='gen_features')(sections)
+    out = tf.keras.layers.Conv2D(1, kernel_size=(1,1), padding='same', activation=None, name='weight_sum')(sections)
+
+    model = tf.keras.models.Model(inputs=[inp],outputs=[out])
+    model.compile(loss=cmae, metrics='mse')
+    
+    # TODO:set weights
+    x  = np.arange(-2**(N_scale-1)+1, 2**(N_scale-1))
+    y = x
+    X,Y = np.meshgrid(x,y)
+    polys=[]
+    for kx in range(N_scale):
+        for ky in range(N_scale):
+            poly = np.multiply(np.power(x,kx), np.power(y,ky))
+            polys.append(poly)
+    
+
 def train():
     N_features = 8
     N_x = int(np.math.ceil(np.sqrt(N_features)))

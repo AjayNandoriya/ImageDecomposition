@@ -18,7 +18,7 @@ def create_model(N_scale=4, N_features=16):
     inp = tf.keras.layers.Input(shape=(None,None,1))
     sections = tf.keras.layers.Conv2D(N_features, kernel_size=kernel_size, strides=strides, padding='same', activation='softmax', name='regions')(inp)
     sections = tf.keras.layers.UpSampling2D(size=strides,interpolation='bilinear')(sections)
-    features = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding='same', activation='tanh')(sections)
+    features = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding='same', activation='tanh', name='deconv')(sections)
     out = tf.keras.layers.Conv2D(1, kernel_size=(1,1), padding='same', activation=None, name='weight_sum')(features)
 
     base_kernel_size = [2**(N_scale+1), 2**(N_scale+1)] 
@@ -52,21 +52,94 @@ def create_base_model(N_scale=4):
 
 def create_polynomial_model(N_scale=4, N_power=4):
     if N_power<=1:
-        N_features = 1
-    else:
-        N_features = N_power**2
+        N_power = 1
+    N_features = N_power**2
     kernel_size = [2**N_scale-1, 2**N_scale-1] 
     strides = (2**(N_scale-1), 2**(N_scale-1))
-    inp = tf.keras.layers.Input(shape=(None,None,1))
+    inp = tf.keras.layers.Input(shape=(512,512,1))
     sections = tf.keras.layers.Conv2D(N_features, kernel_size=kernel_size, strides=strides, padding='same', name='scale_features')(inp)
-    sections = tf.keras.layers.UpSampling2D(size=strides,interpolation='bilinear', name='features')(sections)
-    # features = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding='same', name='gen_features')(sections)
-    out = tf.keras.layers.Conv2D(1, kernel_size=(1,1), padding='same', activation=None, name='weight_sum')(sections)
+    features = tf.keras.layers.Conv2DTranspose(N_features, kernel_size=kernel_size, dilation_rate=(1,1), strides=strides, padding='same', name='upsample')(sections)
+    # features = tf.keras.layers.DepthwiseConv2D(kernel_size=kernel_size, padding='same', name='deconv')(sections)
+    out = tf.keras.layers.Conv2D(1, kernel_size=(1,1), padding='same', activation=None, name='weight_sum', use_bias=False)(features)
 
     model = tf.keras.models.Model(inputs=[inp],outputs=[out])
     model.compile(loss=cmae, metrics='mse')
     
     # TODO:set weights
+    layer = model.get_layer('weight_sum')
+    w = layer.get_weights() # [(kh,kw,N,1)]
+    w[0] = np.ones_like(w[0])
+    layer.set_weights(w)
+
+
+    kernels_fw, kernels_bk = create_poly(N_scale=N_scale, N_power=N_power)
+    # upsample
+    layer = model.get_layer('upsample')
+    w = layer.get_weights() # [(kh,kw,N,N),(N,)]
+    w[1] = np.zeros_like(w[1])
+    w[0] = np.zeros_like(w[0])
+    kh,kw,kN1,kN2 = w[0].shape
+    cy = int(kh//2)
+    cx = int(kw//2)
+    
+    # for k in range(kN1):
+    #     # w[0][:,:,k,k] = 0.5
+    #     # w[0][cy,:,k,k] = 1
+    #     # w[0][:,cx,k,k] = 1
+    #     w[0][(cy-8):(cy+8),(cx-8):(cx+8),k,k] = 1
+    
+    x_range = np.arange(-int(kw//2), int(kw//2)+1)/strides[1]
+    y_range = np.arange(-int(kh//2), int(kh//2)+1)/strides[0]
+    xx,yy = np.meshgrid(x_range, y_range)
+    linear_kernel = np.multiply(strides[1]-xx, strides[0]-yy)
+    mask = np.logical_and(np.abs(xx)<8/strides[1],np.abs(yy)<8/strides[0])
+    linear_kernel = np.multiply(np.abs(linear_kernel), mask) 
+    kernel_norm = 1
+    linear_kernel = np.divide(linear_kernel, kernel_norm)
+    linear_kernel = mask.astype(float)
+    
+    for ky in range(N_power):
+        for kx in range(N_power):
+            k = ky*N_power + kx
+            w[0][:,:,k,k] = np.multiply(kernels_bk[:,k].reshape((kh,kw)),linear_kernel)
+
+    layer.set_weights(w)
+
+
+    # deconv = model.get_layer('deconv')
+    # w = deconv.get_weights() # [(kh,kw,N,1),(N,)]
+    # w[1] = np.zeros_like(w[1])
+    
+    # # w[0][:,:,0,0] = 1/(w[0].shape[0]*w[0].shape[1])
+    # kh,kw,_,_ = w[0].shape
+    # cy = int(kh//2)
+    # cx = int(kw//2)
+    # w[0][cy,cx,0,0] = 1
+    
+    
+    # # print(w)
+
+    layer = model.get_layer('scale_features')
+    w = layer.get_weights() # [(kh,kw,1,N),(N,)]
+    w[1] = np.zeros_like(w[1]) 
+    w[0] = np.zeros_like(w[0])
+    kh,kw,kN1,kN2 = w[0].shape
+
+    x_range = np.arange(-int(kw//2), int(kw//2)+1)/strides[1]
+    y_range = np.arange(-int(kh//2), int(kh//2)+1)/strides[0]
+    xx,yy = np.meshgrid(x_range, y_range)
+    kernel_norm = kh*kw
+    for ky in range(N_power):
+        for kx in range(N_power):
+            k = ky*N_power + kx
+            w[0][:,:,0,k] = kernels_fw[k,:].reshape((kh,kw))
+
+    # w[0][:,:,0,0] = 1/(w[0].shape[0]*w[0].shape[1]) 
+
+    layer.set_weights(w)
+    # print(w)
+
+    return model
     x  = np.arange(-2**(N_scale-1)+1, 2**(N_scale-1))
     y = x
     X,Y = np.meshgrid(x,y)
@@ -123,6 +196,79 @@ def train():
     plt.subplot(236, sharex=ax1, sharey=ax1),plt.imshow(base_diff),plt.title(f'{base_mae:0.04f}')
 
 
+def create_poly(N_scale=4, N_power=4):
+    # 
+    if N_power<=1:
+        N_power = 1
+    N_features = N_power**2
+    kernel_size = [2**N_scale-1, 2**N_scale-1] 
+    strides = (2**(N_scale-1), 2**(N_scale-1))
+    
+    kw = 2**N_scale-1
+    kh = 2**N_scale-1
+    x_range = np.arange(-int(kw//2), int(kw//2)+1)/strides[1]
+    y_range = np.arange(-int(kh//2), int(kh//2)+1)/strides[0]
+    xx,yy = np.meshgrid(x_range, y_range)
+
+    # I = X*A
+    # A = inv(XtX)*I
+    # I (kh*kw,1)
+    # X (kh*kw, Nx*Ny)
+    # A (Nx*Ny,1)
+    kernels_bk = np.zeros((kh*kw, N_power*N_power))
+    kernel_norm = kw*kh
+    for ky in range(N_power):
+        for kx in range(N_power):
+            k = ky*N_power + kx
+            kernel = np.multiply(np.power(xx, kx),np.power(yy, ky))
+            kernel = np.divide(kernel, kernel_norm)
+            kernels_bk[:,k] = kernel.flatten()
+
+    kernels_fw = np.matmul(np.linalg.inv(np.matmul(kernels_bk.T,kernels_bk)),kernels_bk.T)
+
+    # kernels_fw (Nx*Ny, kh*kw)
+    # kernels_fw (kh*kw, Nx*Ny)
+    return kernels_fw, kernels_bk
+
+def anayse_poly_model():
+    base_dir =os.path.dirname(__file__)
+    img_fname = os.path.join(base_dir,'..','data','sem_images','SRAM_22nm.jpg')
+    dg = DataGenerator(img_fname)
+
+    N_scale = 5
+    N_power = 8
+    N_features = N_power**2
+    N_x = N_power
+    model = create_polynomial_model(N_scale, N_power)
+    
+    features = model.get_layer('weight_sum').input
+    regions = model.get_layer('scale_features').output
+    debug_model = tf.keras.models.Model(inputs=[model.input], outputs=[features,regions, model.output])
+    features,regions, out_img4d = debug_model.predict(dg.img4d)
+    
+    img = dg.img4d[0,:,:,0]
+    out_img = out_img4d[0,:,:,0]
+    diff = out_img - img
+    print(features.shape)
+    print(regions.shape)
+    plt.figure(1)
+    for i in range(N_features):
+      plt.subplot(N_x,N_x,i+1)
+      plt.imshow(regions[0,:,:,i])
+
+    plt.figure(2)
+    for i in range(N_features):
+      plt.subplot(N_x,N_x,i+1)
+      plt.imshow(features[0,:,:,i])
+
+    plt.figure(3)
+    ax1 = plt.subplot(131)
+    plt.imshow(img, vmin=0, vmax=1)
+    plt.subplot(132, sharex=ax1, sharey=ax1),plt.imshow(out_img, vmin=0, vmax=1)
+    plt.subplot(133, sharex=ax1, sharey=ax1),plt.imshow(diff, vmin=-0.2, vmax=0.2)
+    plt.show()
+
+
 def analyse_model():
     base_dir =os.path.dirname(__file__)
     N_features = 8
@@ -171,7 +317,7 @@ def analyse_model():
     diff_hist = np.histogram(np.abs(diff), bins=100)
 
     # base line
-    base_model = create_base_model(5)
+    base_model = create_polynomial_model(5)
     
     base_out_img4d = base_model.predict(dg.img4d)
     base_out_img = base_out_img4d[0,:,:,0]
@@ -217,5 +363,7 @@ def analyze_loss():
 
 if __name__ == '__main__':
     # train()
-    analyse_model()
+    # analyse_model()
     # analyze_loss()
+    # create_polynomial_model()
+    anayse_poly_model()

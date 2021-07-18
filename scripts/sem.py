@@ -50,6 +50,41 @@ def create_base_model(N_scale=4):
     model.compile(loss=cmae, metrics='mse')
     return model
 
+
+def create_interpolation_mask(kh,kw, Nx, Ny):
+    kx_half = int(kw//2)
+    ky_half = int(kh//2)
+
+    #bilinear
+    x_range = np.arange(-kx_half,kx_half+1)/Nx
+    y_range = np.arange(-ky_half,ky_half+1)/Ny
+    x = 1 - np.abs(x_range)
+    x[x<0]=0
+    y = 1-np.abs(y_range)
+    y[y<0] = 0
+
+
+    # # nearest
+    # x[:] = 0
+    # y[:] = 0
+    # kx_4 = int(kw//4)
+    # ky_4 = int(kh//4)
+    # x[(kx_half-kx_4-1):(kx_half+kx_4+1)] = 1
+    # y[(ky_half-ky_4-1):(ky_half+ky_4+1)] = 1
+
+
+    kernel  = np.matmul(x.reshape((-1,1)), y.reshape((1,-1)))
+    return kernel
+
+
+def test_create_interpolation_mask():
+    kh,kw = 31,31
+    Nx,Ny = 16,16
+    kernel = create_interpolation_mask(kh,kw, Nx, Ny)
+    plt.imshow(kernel)
+    plt.show()
+
+
 def create_polynomial_model(N_scale=4, N_power=4):
     if N_power<=1:
         N_power = 1
@@ -88,15 +123,17 @@ def create_polynomial_model(N_scale=4, N_power=4):
     #     # w[0][:,cx,k,k] = 1
     #     w[0][(cy-8):(cy+8),(cx-8):(cx+8),k,k] = 1
     
-    x_range = np.arange(-int(kw//2), int(kw//2)+1)/strides[1]
-    y_range = np.arange(-int(kh//2), int(kh//2)+1)/strides[0]
-    xx,yy = np.meshgrid(x_range, y_range)
-    linear_kernel = np.multiply(strides[1]-xx, strides[0]-yy)
-    mask = np.logical_and(np.abs(xx)<8/strides[1],np.abs(yy)<8/strides[0])
-    linear_kernel = np.multiply(np.abs(linear_kernel), mask) 
-    kernel_norm = 1
-    linear_kernel = np.divide(linear_kernel, kernel_norm)
-    linear_kernel = mask.astype(float)
+    # x_range = np.arange(-int(kw//2), int(kw//2)+1)/strides[1]
+    # y_range = np.arange(-int(kh//2), int(kh//2)+1)/strides[0]
+    # xx,yy = np.meshgrid(x_range, y_range)
+    # linear_kernel = np.multiply(strides[1]-xx, strides[0]-yy)
+    # mask = np.logical_and(np.abs(xx)< 8/strides[1],np.abs(yy)<8/strides[0])
+    # linear_kernel = np.multiply(np.abs(linear_kernel), mask) 
+    # kernel_norm = 1
+    # linear_kernel = np.divide(linear_kernel, kernel_norm)
+    # linear_kernel = mask.astype(float)
+
+    linear_kernel = create_interpolation_mask(kh,kw,strides[0], strides[1])
     
     for ky in range(N_power):
         for kx in range(N_power):
@@ -251,6 +288,8 @@ def anayse_poly_model():
     diff = out_img - img
     print(features.shape)
     print(regions.shape)
+
+    print(np.mean(np.abs(diff[15:-15,15:-15])))
     plt.figure(1)
     for i in range(N_features):
       plt.subplot(N_x,N_x,i+1)
@@ -367,3 +406,4 @@ if __name__ == '__main__':
     # analyze_loss()
     # create_polynomial_model()
     anayse_poly_model()
+    # test_create_interpolation_mask()

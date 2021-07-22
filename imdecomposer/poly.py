@@ -32,6 +32,7 @@ def create_poly(N_scale=4, N_power=4):
 
     kernel_bk = np.matmul(np.linalg.inv(np.matmul(kernels_fw.T,kernels_fw)),kernels_fw.T)
 
+    return kernels_fw, kernel_bk
 
     base_dir =os.path.dirname(__file__)
     img_fname = os.path.join(base_dir,'..','data','sem_images','SRAM_22nm.jpg')

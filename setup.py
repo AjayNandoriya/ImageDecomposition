@@ -23,4 +23,12 @@ setuptools.setup(
     package_dir={"": "imdecomposer"},
     packages=setuptools.find_packages(where="imdecomposer"),
     python_requires=">=3.6",
+    install_requires=['tensorflow_gpu==2.5.0',
+                      'numpy==1.19.5',
+                      'matplotlib==3.4.2',
+                      'opencv_python==4.5.3.56',
+                      'tensorflow==2.5.0'],
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
+    test_suite="tests",
 )

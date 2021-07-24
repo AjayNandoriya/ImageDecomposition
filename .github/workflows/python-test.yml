@@ -35,4 +35,11 @@ jobs:
     - name: Test with pytest
       run: |
         pytest tests --doctest-modules --junitxml=junit/test-results-python-3.x.xml
+    - name: Upload pytest test results
+      uses: actions/upload-artifact@v2
+      with:
+        name: pytest-results-python-3.x
+        path: junit/test-results-python-3.x.xml
+      # Use always() to always run this step to publish test results when there are test failures
+      if: ${{ always() }}
 

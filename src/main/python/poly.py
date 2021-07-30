@@ -6,8 +6,8 @@ from matplotlib import pyplot as plt
 def create_poly(N_scale=4, N_power=4):
     if N_power<=1:
         N_power = 1
-    N_features = N_power**2
-    kernel_size = [2**N_scale-1, 2**N_scale-1] 
+    # N_features = N_power**2
+    # kernel_size = [2**N_scale-1, 2**N_scale-1] 
     strides = (2**(N_scale-1), 2**(N_scale-1))
     
     kw = 2**N_scale-1

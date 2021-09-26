@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://docs.opencv.org/3.4.0/opencv.js"></script>
+    <link rel="stylesheet" href="bootstrap/5.1.0/css/bootstrap.css">
+</head>
+<body>
+    <div class="container" style="width:800px;">
+        <div id="display" class="row border border-primary"  style="width:800px; height:100px;"></div>
+        <div class="row">
+            <button onclick="press('1')" class="col-3" style="height:50px;">1</button>
+            <button onclick="press('2')" class="col-3" style="height:50px;">2</button>
+            <button onclick="press('3')" class="col-3" style="height:50px;">3</button>
+            <button onclick="press('/')" class="col-3 btn-secondary">/</button>
+        </div>
+        <div class="row">
+            <button onclick="press('4')" class="col-3">4</button>
+            <button onclick="press('5')" class="col-3">5</button>
+            <button onclick="press('6')" class="col-3">6</button>
+            <button onclick="press('*')" class="col-3 btn-secondary">X</button>
+        </div>
+        <div class="row">
+            <button onclick="press('7')" class="col-3">7</button>    
+            <button onclick="press('8')" class="col-3">8</button>
+            <button onclick="press('9')" class="col-3">9</button>
+            <button onclick="press('-')" class="col-3 btn-secondary">-</button>
+        </div>
+        <div class="row">
+            <button onclick="press('0')" class="col-3">0</button>
+            <button onclick="press('.')" class="col-3">.</button>
+            <button onclick="press('=')" class="col-3 btn-primary">=</button>
+            <button onclick="press('+')" class="col-3 btn-secondary">+</button>
+        </div>
+        <div class="row">
+            <button onclick="press('c')">clear</button>
+        </div>
+    </div>
+</body>
+<script>
+    function press(n){
+        // console.log(n);
+        if(n=='c'){ //clear
+            document.getElementById("display").innerHTML=""; 
+        }
+        else if(n=='='){ // evaluate, calculate
+            document.getElementById("display").innerHTML=eval(document.getElementById("display").innerHTML);    
+            // console.log(document.getElementById("display").innerHTML);
+        }else{ // type
+            document.getElementById("display").innerHTML+=n;
+        }
+
+        // console.log(element.value);
+    }
+</script>
+</html>

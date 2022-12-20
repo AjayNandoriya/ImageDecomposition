@@ -15,12 +15,12 @@
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script> -->
     <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
 
-    <script src="bootstrap/5.1.0/js/bootstrap.min.js"></script>
+    <!-- <script src="bootstrap/5.1.0/js/bootstrap.min.js"></script> -->
     <script src="https://docs.opencv.org/3.4.0/opencv.js"></script>
-    <link rel="stylesheet" href="bootstrap/5.1.0/css/bootstrap.css">
+    <!-- <link rel="stylesheet" href="bootstrap/5.1.0/css/bootstrap.css"> -->
 
-    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">-->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>  -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script> 
     <title>Measurement</title>
 </head>
 
@@ -82,12 +82,9 @@
         </ul>
     </nav>
     <div class="container p-0"
-        style="width:512px; height:512px; background-color: slategray; display:flex; justify-content: center; align-items: center;">
+        style="width: 128px; height:128px; background-color: slategray; display:flex; justify-content: center; align-items: center;">
         <img id="canvasInput" src="http://picsum.photos/600/600?image=0">
-    </div>
-    <div class="container p-0"
-        style="width:512px; height:512px; background-color: slategray; display:flex; justify-content: center; align-items: center;">
-        <img id="canvasOutput" src="http://picsum.photos/600/600?image=0">
+        <img id="canvasOutput" src="http://picsum.photos/600/600?image=0" style="visibility: hidden;">
     </div>
     <button onclick="blood()">
         try

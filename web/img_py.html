@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+    <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+    <py-env>
+        -pkg_resources
+    </py-env>
+    <script type="text/javascript">
+        async function main() {
+            let pyodide = await loadPyodide();
+            await pyodide.loadPackage("micropip");
+            await pyodide.runPythonAsync(`
+            import micropip
+            await micropip.install('opencv-python')
+            // import pkg_resources
+            // installed_packages = pkg_resources.working_set
+            // installed_packages_list = sorted(["%s==%s" % (i.key, i.version)
+            // for i in installed_packages])
+            // print(installed_packages_list)
+            
+        `);
+        }
+        main();
+      </script>
+
+    <title>Document</title>
+</head>
+<body>
+    <py-script>
+        import pkg_resources
+        installed_packages = pkg_resources.working_set
+        installed_packages_list = sorted(["%s==%s" % (i.key, i.version)
+        for i in installed_packages])
+        print(installed_packages_list)
+        
+        <!-- import cv2
+        print(cv2.__version__) -->
+    </py-script>
+</body>
+</html>

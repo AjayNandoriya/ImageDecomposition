@@ -5,12 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: 目前檔案",
-            "type": "python",
+            "type": "chrome",
             "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": false,
+            "name": "Open index.html",
+            "file": "c:\\dev\\repos\\ImageDecomposition\\web\\index.html"
         }
     ]
 }

@@ -3,17 +3,18 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-def create_poly(N_scale=4, N_power=4):
+def create_poly(ksize, N_power=4):
     if N_power<=1:
         N_power = 1
     # N_features = N_power**2
     # kernel_size = [2**N_scale-1, 2**N_scale-1] 
-    strides = (2**(N_scale-1), 2**(N_scale-1))
+    strides = (1, 1)
     
-    kw = 2**N_scale-1
-    kh = 2**N_scale-1
-    x_range = np.arange(-int(kw//2), int(kw//2)+1)/strides[1]
-    y_range = np.arange(-int(kh//2), int(kh//2)+1)/strides[0]
+    kw = ksize
+    kh = ksize
+
+    x_range = np.arange(-int(kw//2), int(kw//2))/strides[1]
+    y_range = np.arange(-int(kh//2), int(kh//2))/strides[0]
     xx,yy = np.meshgrid(x_range, y_range)
 
     # I = X*A
@@ -54,6 +55,21 @@ def create_poly(N_scale=4, N_power=4):
     plt.subplot(224),plt.imshow(img_ori)
     plt.show()
 
+def test_create_polys():
+    N = 64
+    img = np.zeros((N,N))
+    img[:,:N//2]=  1
+    kf,kb = create_poly(ksize=N, N_power=6)
+
+    fimg = np.matmul(kb,img.reshape((-1,1)))
+    print(fimg)
+    rimg = np.matmul(kf,fimg).reshape((N,N))
+    plt.imshow(rimg),plt.show()
+    print(kf.shape)
+    print(kb.shape)
+    pass
+
+
 if __name__ == '__main__':
-    create_poly()
+    test_create_polys()
     

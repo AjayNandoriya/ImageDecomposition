@@ -1,0 +1,158 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script> -->
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> -->
+
+    <!-- <script src="bootstrap/5.1.0/js/bootstrap.min.js"></script> -->
+    <script src="https://docs.opencv.org/3.4.0/opencv.js"></script>
+    <!-- <link rel="stylesheet" href="bootstrap/5.1.0/css/bootstrap.css"> -->
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script> 
+    <title>Measurement</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-sm navbar-dark" style="background-color: #7952b3;">
+        <!-- Brand -->
+        <a class="navbar-brand" href="#">SEM</a>
+        <!-- Links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="#">Link 1</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">Link 2</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbardrop" data-bs-toggle="dropdown">
+                    Dropdown link
+                </a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#">Link 1</a>
+                    <a class="dropdown-item" href="#">Link 2</a>
+                    <a class="dropdown-item" href="#">Link 3</a>
+                </div>
+            </li>
+
+            <!-- Dropdown -->
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbardropFile" data-bs-toggle="dropdown">
+                    File
+                </a>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="alert('link1');">Open File...</div>
+                    <div class="dropdown-item">Open URL...</div>
+                    <div class="dropdown-item">Open Camera...</div>
+                    <div class="dropdown-item">Download</div>
+                </div>
+            </li>
+
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbardropEdit" data-bs-toggle="dropdown">
+                    Edit
+                </a>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="alert('reset');">Reset</div>
+                </div>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbardropFilter" data-bs-toggle="dropdown">
+                    Filter
+                </a>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" onclick="alert('blur');">Blur</div>
+                    <div class="dropdown-item" onclick="alert('Sharpen');">Sharpen</div>
+                    <div class="dropdown-item" onclick="alert('PCA');">PCA</div>
+                    <div class="dropdown-item" onclick="alert('toonify');">Toonify</div>
+                </div>
+            </li>
+        </ul>
+    </nav>
+    <div class="container p-0"
+        style="width: 128px; height:128px; background-color: slategray; display:flex; justify-content: center; align-items: center;">
+        <img id="canvasInput" src="http://picsum.photos/600/600?image=0">
+        <img id="canvasOutput" src="http://picsum.photos/600/600?image=0" style="visibility: hidden;">
+    </div>
+    <button onclick="blood()">
+        try
+    </button>
+    <script>
+        function blood() {
+            console.log("inside blood");
+            let src = cv.imread('canvasInput');
+            let dst = new cv.Mat();
+            let ksize = new cv.Size(3, 3);
+            let anchor = new cv.Point(-1, -1);
+            // You can try more different parameters
+            cv.blur(src, dst, ksize, anchor, cv.BORDER_DEFAULT);
+            // cv.boxFilter(src, dst, -1, ksize, anchor, true, cv.BORDER_DEFAULT)
+            cv.imshow('canvasOutput', dst);
+            src.delete();
+            dst.delete();
+        }
+    </script>
+</body>
+
+<script>
+    var draw_btn = document.querySelector("#draw");
+    draw_btn.onclick = function (e) {
+        console.log('set drawing');
+        var canvas = document.querySelector('#board');
+        var ctx = canvas.getContext('2d');
+
+        // var sketch = document.querySelector('#sketch');
+        // var sketch_style = getComputedStyle(sketch);
+        // canvas.width = parseInt(sketch_style.getPropertyValue('width'));
+        // canvas.height = parseInt(sketch_style.getPropertyValue('height'));
+
+        var last_mouse = {x:0, y:0};
+        var mouse = {x:0, y:0};
+        /* Mouse Capturing Work */
+        canvas.addEventListener('mousemove', function (e) {
+            last_mouse.x = mouse.x;
+            last_mouse.y = mouse.y;
+
+            mouse.x = e.pageX - this.offsetLeft;
+            mouse.y = e.pageY - this.offsetTop;
+            console.log(mouse);
+        }, false);
+
+
+        /* Drawing on Paint App */
+        ctx.lineWidth = 5;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'blue';
+
+        canvas.addEventListener('mousedown', function (e) {
+            canvas.addEventListener('mousemove', onPaint, false);
+        }, false);
+
+        canvas.addEventListener('mouseup', function () {
+            canvas.removeEventListener('mousemove', onPaint, false);
+        }, false);
+
+        var onPaint = function () {
+            ctx.beginPath();
+            ctx.moveTo(last_mouse.x, last_mouse.y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.closePath();
+            ctx.stroke();
+        };
+
+    }
+</script>
+
+</html>

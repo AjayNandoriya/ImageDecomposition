@@ -8,4 +8,5 @@
     "jupyter.debugJustMyCode": false,
     "jupyter.jupyterServerType": "local",
     "python.languageServer": "Pylance",
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
 }

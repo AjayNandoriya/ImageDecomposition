@@ -8,4 +8,9 @@
     "jupyter.debugJustMyCode": false,
     "jupyter.jupyterServerType": "local",
     "python.languageServer": "Pylance",
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "terminal.integrated.env.windows": {
+        // "PATH":"/usr/local/bin:/usr/bin:/bin:/opt/bin:/c/Windows/System32:/c/Windows:/c/Windows/System32/Wbem:/c/Windows/System32/WindowsPowerShell/v1.0/:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/c/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.0/bin"
+    },
+    "git.ignoreLimitWarning": true
 }

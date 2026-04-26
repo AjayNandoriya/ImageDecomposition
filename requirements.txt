@@ -1,5 +1,8 @@
 numpy
 matplotlib
-tensorflow
+# tensorflow
 opencv-python
 pandas
+transformers
+torch
+torchvision

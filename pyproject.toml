@@ -1,3 +1,25 @@
 [build-system]
 requires = ["pybuilder>=0.12.0"]
 build-backend = "pybuilder.pep517"
+
+[project]
+name = "image-decomposition-swin-unet"
+version = "0.0.1"
+description = "Decompose images into components using Swin UNet for MIM (Masked Image Modeling)."
+requires-python = ">=3.8"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=2.0.0",
+    "transformers>=4.40.0",
+    "numpy>=1.24.0",
+    "scikit-image>=0.20.0",
+    "matplotlib>=3.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "black>=24.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+]

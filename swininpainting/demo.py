@@ -109,7 +109,9 @@ class Swinv2UNetDecoderLayer(nn.Module):
         x = self.linear(x)
         
         # Pass through Swinv2Stage
-        x = self.stage(x)
+        out_resolution = (self.input_resolution[0] * 2, self.input_resolution[1] * 2)
+        stage_outputs = self.stage(x, input_dimensions=out_resolution)
+        x = stage_outputs[0]
         return x
 
 class Swinv2UNetForMaskedImageModeling(Swinv2PreTrainedModel):
@@ -194,15 +196,16 @@ class Swinv2UNetForMaskedImageModeling(Swinv2PreTrainedModel):
         
         # Skip connections
         # Since standard Swinv2 outputs states after each stage:
-        # Skip connection 0 (for 56x56): hidden_states[1]
-        # Skip connection 1 (for 28x28): hidden_states[2]
-        # Skip connection 2 (for 14x14): hidden_states[3]
+        # Skip connection 0 (for 56x56): hidden_states[0] (patch embeddings)
+        # Skip connection 1 (for 28x28): hidden_states[1]
+        # Skip connection 2 (for 14x14): hidden_states[2]
+        # (hidden_states[3] and [4] have the same resolution because final stage doesn't downsample)
         
         num_layers = len(self.config.depths)
         x = hidden_states[-1] # bottleneck, e.g., (B, 7x7, 768)
         
         # Reverse iterate through skip connections
-        skip_connections = hidden_states[1:-1] # e.g., [state0, state1, state2]
+        skip_connections = hidden_states[:-2] # e.g., [patch_embed, stage0, stage1]
         
         for i, decoder_layer in enumerate(self.decoder_layers):
             skip_idx = len(skip_connections) - 1 - i
@@ -324,7 +327,30 @@ def train_model(model_config, dataset_dir, epochs=10, batch_size=4, lr=1e-4):
         
     return model
 
-if __name__ == "__main__":
+def test_train_model():
+    import tempfile
+    import os
+    
+    config = Swinv2Config(
+        image_size=256,
+        patch_size=4,
+        embed_dim=96,
+        depths=[2, 2, 6, 2],
+        num_heads=[3, 6, 12, 24],
+        window_size=8,
+    )
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        print(f"Created temporary dataset directory: {tmpdir}")
+        for i in range(4):
+            dummy_img = Image.fromarray(np.random.randint(0, 256, (256, 512, 3), dtype=np.uint8))
+            dummy_img.save(os.path.join(tmpdir, f"dummy_{i}.jpg"))
+            
+        print("Starting train_model test...")
+        model = train_model(config, tmpdir, epochs=2, batch_size=2)
+        print("train_model test completed successfully.")
+
+def small_test():
     # Small test
     config = Swinv2Config(
         image_size=256,
@@ -357,3 +383,45 @@ if __name__ == "__main__":
     # Test random mask generation
     dummy_mask = generate_random_mask((64, 64))
     print("Dummy mask generated with shape:", dummy_mask.shape, "and sum:", dummy_mask.sum().item())
+
+    # plot input, output, mask using matplotlib shared axis
+
+    import matplotlib.pyplot as plt
+
+    # Unpatchify output for visualization: [B, L, P*P*C] -> [H, W, C, P, P] -> [H*P, W*P, C]
+    # For batch 0
+    P = config.patch_size
+    H = W = config.image_size // P
+    
+    out_img = output[0].view(H, W, 3, P, P)
+    out_img = out_img.permute(0, 3, 1, 4, 2).contiguous()
+    out_img = out_img.view(H * P, W * P, 3).detach().cpu()
+    
+    # dummy_mask is for a single image, shape (H*W,)
+    mask_img = dummy_mask.view(H, W).float().cpu()
+
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+    
+    # Input is normalized to [-1, 1] approximately, let's unnormalize for display
+    in_img = pixel_values[0].permute(1, 2, 0).detach().cpu()
+    in_img = (in_img * 0.5 + 0.5).clamp(0, 1)
+    
+    axes[0].imshow(in_img)
+    axes[0].set_title("Input")
+    
+    # out_img might also need unnormalization depending on loss, but it's random now
+    out_img = (out_img * 0.5 + 0.5).clamp(0, 1)
+    axes[1].imshow(out_img)
+    axes[1].set_title("Output")
+    
+    axes[2].imshow(mask_img, cmap='gray')
+    axes[2].set_title("Mask")
+    
+    plt.savefig("model.png")
+    print("Plot saved to model.png")
+
+
+if __name__ == "__main__":
+    # small_test()
+    test_train_model()
+    

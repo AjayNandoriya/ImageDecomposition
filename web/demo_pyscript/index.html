@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.20.0.min.js"></script>
+</head>
+
+<body>
+    <py-config type="json">
+        {
+        "packages" : ["plotly","matplotlib", "pandas","numpy","opencv-python"],
+        "fetch":[{
+            "from":"./py",
+            "files":["process.py","app.py"]
+        }],
+        "terminal":true
+        }
+    </py-config>
+
+    <section class="pyscript">
+        <label for="ref-file-upload-pillow">Upload a PNG image Ref</label></label><input type="file" id="ref-file-upload-pillow">
+        <label for="test-file-upload-pillow">Upload a PNG image Test</label><input type="file" id="test-file-upload-pillow">
+        <label for="base-file-upload-pillow">Upload a PNG image Base</label><input type="file" id="base-file-upload-pillow">
+        <button id="run">Run</button>
+        <div id="output_upload_pillow"></div>
+        <py-script src="./py/app.py"></py-script>
+    </section>
+
+
+</body>
+
+</html>
